@@ -70,3 +70,7 @@ TOOL_CHANGES_SUMMARY.md
 
 live_browser/frontend/node_modules
 *.db
+
+claude-code-todo
+result_judge.md
+result.md

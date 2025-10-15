@@ -129,6 +129,7 @@ class MessageManager:
 		self.include_attributes = include_attributes or []
 		self.sensitive_data = sensitive_data
 		self.last_input_messages = []
+		self.last_state_message_text: str | None = None
 		# Only initialize messages if state is empty
 		if len(self.state.history.get_messages()) == 0:
 			self._set_message_with_type(self.system_prompt, 'system')
@@ -222,7 +223,7 @@ class MessageManager:
 		self.state.read_state_description = self.state.read_state_description.strip('\n')
 
 		if action_results:
-			action_results = f'Result:\n{action_results}'
+			action_results = f'Result\n{action_results}'
 		action_results = action_results.strip('\n') if action_results else None
 
 		# Simple 60k character limit for action_results
@@ -354,6 +355,9 @@ class MessageManager:
 			include_recent_events=self.include_recent_events,
 			sample_images=self.sample_images,
 		).get_user_message(effective_use_vision)
+
+		# Store state message text for history
+		self.last_state_message_text = state_message.text
 
 		# Set the state message with caching enabled
 		self._set_message_with_type(state_message, 'state')
