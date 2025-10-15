@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 from browser_use.llm.azure.chat import ChatAzureOpenAI
 from browser_use.llm.cerebras.chat import ChatCerebras
 from browser_use.llm.google.chat import ChatGoogle
+from browser_use.llm.internal.chat import ChatOpenAI as ChatInternal
 from browser_use.llm.openai.chat import ChatOpenAI
 
 # Optional OCI import
@@ -63,6 +64,9 @@ google_gemini_2_5_pro: 'BaseChatModel'
 google_gemini_2_5_flash: 'BaseChatModel'
 google_gemini_2_5_flash_lite: 'BaseChatModel'
 
+# Internal model type stubs
+internal_deepseek_qwen_32b: 'BaseChatModel'
+internal_InternalGPT_R: 'BaseChatModel'
 cerebras_llama3_1_8b: 'BaseChatModel'
 cerebras_llama3_3_70b: 'BaseChatModel'
 cerebras_gpt_oss_120b: 'BaseChatModel'
@@ -152,6 +156,24 @@ def get_llm_by_name(model_name: str):
 		api_key = os.getenv('GOOGLE_API_KEY')
 		return ChatGoogle(model=model, api_key=api_key)
 
+	# Internal Models (OpenAI-compatible)
+	elif provider == 'internal':
+		api_key = os.getenv('INTERNAL_API_KEY')
+		base_url = os.getenv('INTERNAL_BASE_URL')
+		if not api_key:
+			raise ValueError("INTERNAL_API_KEY environment variable is required for internal models")
+		if not base_url:
+			raise ValueError("INTERNAL_BASE_URL environment variable is required for internal models")
+		
+		# For internal models, use the original model_part as the model name
+		# This preserves the exact model name format expected by the internal service
+		# Examples: 
+		# - internal_deepseek_qwen_32b -> model="deepseek_qwen_32b"
+		# - internal_InternalGPT_R -> model="InternalGPT_R"
+		return ChatInternal(model=model_part, api_key=api_key, base_url=base_url)
+
+	else:
+		available_providers = ['openai', 'azure', 'google', 'internal']
 	# OCI Models
 	elif provider == 'oci':
 		# OCI requires more complex configuration that can't be easily inferred from env vars
@@ -178,6 +200,8 @@ def __getattr__(name: str) -> 'BaseChatModel':
 		return ChatAzureOpenAI  # type: ignore
 	elif name == 'ChatGoogle':
 		return ChatGoogle  # type: ignore
+	elif name == 'ChatInternal':
+		return ChatInternal  # type: ignore
 	elif name == 'ChatOCIRaw':
 		if not OCI_AVAILABLE:
 			raise ImportError('OCI integration not available. Install with: pip install "browser-use[oci]"')
@@ -197,6 +221,7 @@ __all__ = [
 	'ChatOpenAI',
 	'ChatAzureOpenAI',
 	'ChatGoogle',
+	'ChatInternal',
 	'ChatCerebras',
 ]
 
@@ -237,6 +262,9 @@ __all__ += [
 	'google_gemini_2_5_pro',
 	'google_gemini_2_5_flash',
 	'google_gemini_2_5_flash_lite',
+	# Internal instances - created on demand
+	'internal_deepseek_qwen_32b',
+	'internal_InternalGPT_R',
 	# Cerebras instances - created on demand
 	'cerebras_llama3_1_8b',
 	'cerebras_llama3_3_70b',
