@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 from browser_use.llm.azure.chat import ChatAzureOpenAI
 from browser_use.llm.google.chat import ChatGoogle
+from browser_use.llm.internal.chat import ChatOpenAI as ChatInternal
 from browser_use.llm.openai.chat import ChatOpenAI
 
 if TYPE_CHECKING:
@@ -52,6 +53,10 @@ google_gemini_2_0_pro: 'BaseChatModel'
 google_gemini_2_5_pro: 'BaseChatModel'
 google_gemini_2_5_flash: 'BaseChatModel'
 google_gemini_2_5_flash_lite: 'BaseChatModel'
+
+# Internal model type stubs
+internal_deepseek_qwen_32b: 'BaseChatModel'
+internal_InternalGPT_R: 'BaseChatModel'
 
 
 def get_llm_by_name(model_name: str):
@@ -108,8 +113,24 @@ def get_llm_by_name(model_name: str):
 		api_key = os.getenv('GOOGLE_API_KEY')
 		return ChatGoogle(model=model, api_key=api_key)
 
+	# Internal Models (OpenAI-compatible)
+	elif provider == 'internal':
+		api_key = os.getenv('INTERNAL_API_KEY')
+		base_url = os.getenv('INTERNAL_BASE_URL')
+		if not api_key:
+			raise ValueError("INTERNAL_API_KEY environment variable is required for internal models")
+		if not base_url:
+			raise ValueError("INTERNAL_BASE_URL environment variable is required for internal models")
+		
+		# For internal models, use the original model_part as the model name
+		# This preserves the exact model name format expected by the internal service
+		# Examples: 
+		# - internal_deepseek_qwen_32b -> model="deepseek_qwen_32b"
+		# - internal_InternalGPT_R -> model="InternalGPT_R"
+		return ChatInternal(model=model_part, api_key=api_key, base_url=base_url)
+
 	else:
-		available_providers = ['openai', 'azure', 'google']
+		available_providers = ['openai', 'azure', 'google', 'internal']
 		raise ValueError(f"Unknown provider: '{provider}'. Available providers: {', '.join(available_providers)}")
 
 
@@ -123,6 +144,8 @@ def __getattr__(name: str) -> 'BaseChatModel':
 		return ChatAzureOpenAI  # type: ignore
 	elif name == 'ChatGoogle':
 		return ChatGoogle  # type: ignore
+	elif name == 'ChatInternal':
+		return ChatInternal  # type: ignore
 
 	# Handle model instances - these are the main use case
 	try:
@@ -135,6 +158,7 @@ __all__ = [
 	'ChatOpenAI',
 	'ChatAzureOpenAI',
 	'ChatGoogle',
+	'ChatInternal',
 	'get_llm_by_name',
 	# OpenAI instances - created on demand
 	'openai_gpt_4o',
@@ -168,4 +192,7 @@ __all__ = [
 	'google_gemini_2_5_pro',
 	'google_gemini_2_5_flash',
 	'google_gemini_2_5_flash_lite',
+	# Internal instances - created on demand
+	'internal_deepseek_qwen_32b',
+	'internal_InternalGPT_R',
 ]
